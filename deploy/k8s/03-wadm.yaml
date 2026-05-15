@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wadm
+  namespace: petclinic
+  labels:
+    app: wadm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wadm
+  template:
+    metadata:
+      labels:
+        app: wadm
+    spec:
+      containers:
+        - name: wadm
+          image: ghcr.io/wasmcloud/wadm:v0.21.0
+          env:
+            - name: WADM_NATS_SERVER
+              value: nats://nats.petclinic.svc.cluster.local:4222
+          command:
+            - wadm
+            - --nats-server
+            - nats://nats.petclinic.svc.cluster.local:4222

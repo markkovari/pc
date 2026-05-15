@@ -12,6 +12,8 @@ wit-bindgen-rt = { workspace = true }
 serde          = { workspace = true }
 serde_json     = { workspace = true }
 uuid           = { workspace = true }
+sha2           = { workspace = true }
+hmac           = { workspace = true }
 
 [package.metadata.component]
 package = "petclinic:api-gateway"
@@ -27,6 +29,7 @@ world = "api-gateway"
 "wasi:io"             = { path = "../../wit/deps/wasi-io-0.2.2" }
 "wasi:cli"            = { path = "../../wit/deps/wasi-cli-0.2.2-min" }
 "wasi:random"         = { path = "../../wit/deps/wasi-random-0.2.2" }
+"wasi:keyvalue"       = { path = "../../wit/deps/wasi-keyvalue-0.2.0-draft" }
 "petclinic:owner-aggregate" = { path = "../../wit/petclinic-owner-aggregate" }
 "petclinic:pet-aggregate"   = { path = "../../wit/petclinic-pet-aggregate" }
 "petclinic:vet-aggregate"   = { path = "../../wit/petclinic-vet-aggregate" }

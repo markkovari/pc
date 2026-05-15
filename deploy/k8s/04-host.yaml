@@ -1,0 +1,17 @@
+apiVersion: k8s.wasmcloud.dev/v1alpha1
+kind: WasmCloudHostConfig
+metadata:
+  name: petclinic-host
+  namespace: petclinic
+spec:
+  hostReplicas: 1
+  lattice: petclinic
+  version: "1.6.2"
+  natsAddress: nats://nats.petclinic.svc.cluster.local
+  natsClientPort: 4222
+  natsLeafnodePort: 7422
+  jetstreamDomain: default
+  allowLatest: true
+  allowedInsecure:
+    - registry.petclinic.svc.cluster.local:5000
+  logLevel: INFO

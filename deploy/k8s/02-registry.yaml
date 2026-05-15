@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  namespace: petclinic
+  labels:
+    app: registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      containers:
+        - name: registry
+          image: registry:2
+          ports:
+            - containerPort: 5000
+              name: registry
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: petclinic
+  labels:
+    app: registry
+spec:
+  selector:
+    app: registry
+  ports:
+    - name: registry
+      port: 5000
+      targetPort: 5000

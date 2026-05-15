@@ -7,76 +7,268 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; }
-    header { background: #4CAF50; color: white; padding: 1rem 2rem; }
-    header h1 { font-size: 1.5rem; }
-    nav { background: #388E3C; padding: 0.5rem 2rem; display: flex; gap: 1rem; }
-    nav button { background: none; border: none; color: white; cursor: pointer; font-size: 1rem; padding: 0.4rem 0.8rem; border-radius: 4px; }
+    header { background: #4CAF50; color: white; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.4rem; }
+    header .role-badge { background: rgba(0,0,0,0.2); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; }
+    nav { background: #388E3C; padding: 0.5rem 2rem; display: flex; gap: 0.5rem; align-items: center; }
+    nav button { background: none; border: none; color: white; cursor: pointer; font-size: 0.95rem; padding: 0.4rem 0.8rem; border-radius: 4px; }
     nav button:hover, nav button.active { background: rgba(255,255,255,0.2); }
-    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    nav .spacer { flex: 1; }
+    nav .logout-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); }
+    header, nav { display: none; }
+    header.visible, nav.visible { display: flex; }
+    main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
     section { display: none; }
     section.active { display: block; }
     h2 { margin-bottom: 1rem; color: #2E7D32; }
+    h3 { margin: 1.5rem 0 0.75rem; color: #555; font-size: 1rem; }
     .card { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    form label { display: block; margin-bottom: 0.25rem; font-weight: 600; }
-    form input { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 0.75rem; }
-    button.primary { background: #4CAF50; color: white; border: none; padding: 0.6rem 1.4rem; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+    .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; }
+    .auth-card { background: white; border-radius: 10px; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .auth-card h2 { text-align: center; margin-bottom: 1.5rem; font-size: 1.5rem; }
+    .auth-card .logo { text-align: center; font-size: 2.5rem; margin-bottom: 0.5rem; }
+    form label { display: block; margin-bottom: 0.2rem; font-weight: 600; font-size: 0.9rem; color: #555; }
+    form input, form textarea { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 0.9rem; font-size: 0.95rem; }
+    form input:focus, form textarea:focus { outline: none; border-color: #4CAF50; box-shadow: 0 0 0 2px rgba(76,175,80,0.15); }
+    button.primary { background: #4CAF50; color: white; border: none; padding: 0.65rem 1.4rem; border-radius: 5px; cursor: pointer; font-size: 1rem; width: 100%; }
     button.primary:hover { background: #388E3C; }
-    #message { margin-top: 1rem; padding: 0.8rem; border-radius: 4px; display: none; }
-    #message.ok  { background: #C8E6C9; color: #1B5E20; display: block; }
-    #message.err { background: #FFCDD2; color: #B71C1C; display: block; }
+    button.secondary { background: none; border: 1px solid #4CAF50; color: #4CAF50; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem; }
+    button.secondary:hover { background: #f0faf0; }
+    .auth-link { text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666; }
+    .auth-link a { color: #4CAF50; cursor: pointer; text-decoration: underline; }
+    .auth-msg { padding: 0.7rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.9rem; display: none; }
+    .auth-msg.ok  { background: #E8F5E9; color: #1B5E20; display: block; }
+    .auth-msg.err { background: #FFEBEE; color: #B71C1C; display: block; }
     ul.results { list-style: none; }
-    ul.results li { background: white; border-radius: 6px; padding: 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    ul.results li { background: white; border-radius: 6px; padding: 1rem 1.25rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    th { background: #E8F5E9; text-align: left; padding: 0.75rem 1rem; font-size: 0.85rem; color: #555; }
+    td { padding: 0.7rem 1rem; border-top: 1px solid #f0f0f0; font-size: 0.9rem; }
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.78rem; font-weight: 600; }
+    .badge.used { background: #FFEBEE; color: #c62828; }
+    .badge.active { background: #E8F5E9; color: #2e7d32; }
+    .badge.expired { background: #FFF3E0; color: #e65100; }
+    .invite-link-box { background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 6px; padding: 0.75rem 1rem; margin: 0.75rem 0; display: flex; align-items: center; gap: 0.5rem; }
+    .invite-link-box input { flex: 1; background: none; border: none; font-size: 0.85rem; color: #1B5E20; padding: 0; margin: 0; }
+    .copy-btn { background: #4CAF50; color: white; border: none; padding: 0.35rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+    .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; }
+    .tab { background: none; border: none; padding: 0.6rem 1.2rem; cursor: pointer; font-size: 0.95rem; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; width: auto; }
+    .tab.active { color: #4CAF50; border-bottom-color: #4CAF50; font-weight: 600; }
+    .subsection { display: none; }
+    .subsection.active { display: block; }
+    .invite-token-display { background: #f5f5f5; padding: 0.5rem 0.75rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #555; margin-bottom: 1rem; word-break: break-all; }
   </style>
 </head>
 <body>
-  <header><h1>🐾 PetClinic — wasmCloud 2.0</h1></header>
-  <nav>
-    <button class="active" onclick="show('owners')">Owners</button>
-    <button onclick="show('vets')">Vets</button>
-    <button onclick="show('register-owner')">Register Owner</button>
-    <button onclick="show('register-vet')">Register Vet</button>
-  </nav>
-  <main>
-    <div id="message"></div>
+  <header id="header">
+    <h1>🐾 PetClinic — wasmCloud 2.0</h1>
+    <span class="role-badge" id="role-badge"></span>
+  </header>
+  <nav id="nav"></nav>
 
-    <section id="owners" class="active">
-      <h2>Owners</h2>
-      <div class="card">
-        <input id="search-ln" placeholder="Search by last name…" oninput="searchOwners()" />
+  <!-- ── Login ─────────────────────────────────────────────────── -->
+  <section id="login" class="active">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="logo">🐾</div>
+        <h2>PetClinic</h2>
+        <div class="auth-msg" id="login-msg"></div>
+        <form onsubmit="doLogin(event)">
+          <label>Username</label>
+          <input id="l-user" autocomplete="username" required />
+          <label>Password</label>
+          <input id="l-pass" type="password" autocomplete="current-password" required />
+          <button class="primary" type="submit">Sign In</button>
+        </form>
+        <div class="auth-link">New owner? <a onclick="show('register-owner')">Register here</a></div>
+        <div class="auth-link" style="margin-top:0.5rem"><a onclick="show('bootstrap')" style="color:#aaa;font-size:0.8rem">Admin setup</a></div>
       </div>
-      <ul class="results" id="owner-list"></ul>
-    </section>
+    </div>
+  </section>
 
-    <section id="vets">
-      <h2>Veterinarians</h2>
-      <ul class="results" id="vet-list"></ul>
-    </section>
-
-    <section id="register-owner">
-      <h2>Register Owner</h2>
-      <div class="card">
-        <form onsubmit="registerOwner(event)">
-          <label>First Name</label><input id="o-fn" required />
-          <label>Last Name</label><input id="o-ln" required />
-          <label>Address</label><input id="o-addr" required />
-          <label>City</label><input id="o-city" required />
-          <label>Telephone (10 digits)</label><input id="o-tel" pattern="[0-9]{10}" required />
+  <!-- ── Register Owner ─────────────────────────────────────────── -->
+  <section id="register-owner">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h2>Create Account</h2>
+        <div class="auth-msg" id="reg-owner-msg"></div>
+        <form onsubmit="doRegisterOwner(event)">
+          <label>Username</label>
+          <input id="ro-user" autocomplete="username" required />
+          <label>Password</label>
+          <input id="ro-pass" type="password" minlength="8" autocomplete="new-password" required />
+          <label>First Name</label>
+          <input id="ro-fn" required />
+          <label>Last Name</label>
+          <input id="ro-ln" required />
+          <label>Address</label>
+          <input id="ro-addr" required />
+          <label>City</label>
+          <input id="ro-city" required />
+          <label>Telephone (10 digits)</label>
+          <input id="ro-tel" pattern="[0-9]{10}" required />
           <button class="primary" type="submit">Register</button>
         </form>
+        <div class="auth-link"><a onclick="show('login')">Back to Sign In</a></div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section id="register-vet">
-      <h2>Register Veterinarian</h2>
-      <div class="card">
-        <form onsubmit="registerVet(event)">
-          <label>First Name</label><input id="v-fn" required />
-          <label>Last Name</label><input id="v-ln" required />
-          <button class="primary" type="submit">Register</button>
+  <!-- ── Invite (Vet) Registration ─────────────────────────────── -->
+  <section id="invite-register">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h2>Doctor Registration</h2>
+        <p style="font-size:0.85rem;color:#666;margin-bottom:1rem">You've been invited to join as a veterinarian.</p>
+        <div class="invite-token-display" id="invite-token-display"></div>
+        <div class="auth-msg" id="reg-vet-msg"></div>
+        <form onsubmit="doRegisterVet(event)">
+          <label>Username</label>
+          <input id="rv-user" autocomplete="username" required />
+          <label>Password</label>
+          <input id="rv-pass" type="password" minlength="8" autocomplete="new-password" required />
+          <label>First Name</label>
+          <input id="rv-fn" required />
+          <label>Last Name</label>
+          <input id="rv-ln" required />
+          <button class="primary" type="submit">Complete Registration</button>
         </form>
+        <div class="auth-link"><a onclick="show('login')">Back to Sign In</a></div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+
+  <!-- ── Admin Bootstrap ────────────────────────────────────────── -->
+  <section id="bootstrap">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h2>Admin Setup</h2>
+        <p style="font-size:0.85rem;color:#666;margin-bottom:1rem">One-time admin account creation. Only works once.</p>
+        <div class="auth-msg" id="bootstrap-msg"></div>
+        <form onsubmit="doBootstrap(event)">
+          <label>Admin Username</label>
+          <input id="bs-user" autocomplete="username" required />
+          <label>Password</label>
+          <input id="bs-pass" type="password" minlength="8" autocomplete="new-password" required />
+          <button class="primary" type="submit">Create Admin Account</button>
+        </form>
+        <div class="auth-link"><a onclick="show('login')">Back to Sign In</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Owner Dashboard ────────────────────────────────────────── -->
+  <section id="owner-dashboard">
+    <main>
+      <div class="tabs">
+        <button class="tab active" onclick="ownerTab('profile', this)">My Profile</button>
+        <button class="tab" onclick="ownerTab('pets', this)">My Pets</button>
+        <button class="tab" onclick="ownerTab('vets', this)">Find a Vet</button>
+      </div>
+
+      <div class="subsection active" id="owner-profile">
+        <div class="card" id="owner-profile-info">Loading…</div>
+        <div class="card">
+          <h3>Update Contact Info</h3>
+          <form onsubmit="doUpdateOwner(event)">
+            <label>Address</label><input id="up-addr" />
+            <label>City</label><input id="up-city" />
+            <label>Telephone</label><input id="up-tel" />
+            <button class="primary" type="submit" style="width:auto;padding:0.5rem 1.5rem">Save Changes</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="subsection" id="owner-pets">
+        <ul class="results" id="pet-list"></ul>
+        <div class="card">
+          <h3>Add a Pet</h3>
+          <form onsubmit="doAddPet(event)">
+            <label>Name</label><input id="ap-name" required />
+            <label>Birth Date</label><input id="ap-bd" type="date" required />
+            <label>Type ID</label><input id="ap-tid" placeholder="e.g. cat" required />
+            <label>Type Name</label><input id="ap-tn" placeholder="e.g. Cat" required />
+            <button class="primary" type="submit" style="width:auto;padding:0.5rem 1.5rem">Add Pet</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="subsection" id="owner-vets">
+        <ul class="results" id="owner-vet-list"></ul>
+      </div>
+    </main>
+  </section>
+
+  <!-- ── Vet Dashboard ──────────────────────────────────────────── -->
+  <section id="vet-dashboard">
+    <main>
+      <div class="tabs">
+        <button class="tab active" onclick="vetTab('patients', this)">Patients</button>
+        <button class="tab" onclick="vetTab('upload', this)">Upload Doc</button>
+        <button class="tab" onclick="vetTab('viewdocs', this)">View Docs</button>
+      </div>
+
+      <div class="subsection active" id="vet-patients">
+        <ul class="results" id="vet-owner-list"></ul>
+      </div>
+
+      <div class="subsection" id="vet-upload">
+        <div class="card">
+          <h3>Upload Medical Document</h3>
+          <div class="auth-msg" id="upload-msg"></div>
+          <form onsubmit="doUploadDoc(event)">
+            <label>Pet ID</label><input id="ud-pet" placeholder="Paste pet UUID" required />
+            <label>Title</label><input id="ud-title" required />
+            <label>Notes</label><textarea id="ud-notes" rows="3" required style="resize:vertical"></textarea>
+            <label>Attachment (optional)</label>
+            <input id="ud-file" type="file" style="margin-bottom:0.9rem" />
+            <button class="primary" type="submit" style="width:auto;padding:0.5rem 1.5rem">Upload</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="subsection" id="vet-viewdocs">
+        <div class="card" style="margin-bottom:1rem">
+          <form onsubmit="doLoadDocs(event)" style="display:flex;gap:0.5rem;align-items:flex-end;margin:0">
+            <div style="flex:1">
+              <label>Pet ID</label>
+              <input id="vd-pet" placeholder="Paste pet UUID" required style="margin-bottom:0" />
+            </div>
+            <button class="primary" type="submit" style="width:auto;padding:0.55rem 1.2rem;margin:0">Load</button>
+          </form>
+        </div>
+        <div id="docs-list"></div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ── Admin Dashboard ────────────────────────────────────────── -->
+  <section id="admin-dashboard">
+    <main>
+      <div class="tabs">
+        <button class="tab active" onclick="adminTab('invites', this)">Invites</button>
+        <button class="tab" onclick="adminTab('vets', this)">Vets</button>
+      </div>
+
+      <div class="subsection active" id="admin-invites">
+        <div class="card" style="margin-bottom:1rem">
+          <h3>Generate Doctor Invite Link</h3>
+          <button class="primary" onclick="doCreateInvite()" style="width:auto;padding:0.55rem 1.5rem">Generate Link</button>
+          <div id="new-invite-result"></div>
+        </div>
+        <div class="auth-msg" id="admin-msg"></div>
+        <table>
+          <thead><tr><th>Token</th><th>Expires</th><th>Status</th></tr></thead>
+          <tbody id="invites-body"></tbody>
+        </table>
+      </div>
+
+      <div class="subsection" id="admin-vets">
+        <ul class="results" id="admin-vet-list"></ul>
+      </div>
+    </main>
+  </section>
+
   <script src="/app.js"></script>
 </body>
 </html>

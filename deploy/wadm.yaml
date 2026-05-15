@@ -4,7 +4,7 @@ metadata:
   name: petclinic
   annotations:
     description: "wasmCloud 2.0 PetClinic — DDD, Event-Sourced, WIT-First"
-    version: "0.1.10"
+    version: "0.1.19"
 spec:
   components:
 
@@ -12,7 +12,7 @@ spec:
     - name: api-gateway
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/api-gateway:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/api-gateway:latest
       traits:
         - type: spreadscaler
           properties:
@@ -47,12 +47,23 @@ spec:
             namespace: petclinic
             package: gateway
             interfaces: [api]
+        - type: link
+          properties:
+            target: keyvalue-nats
+            namespace: wasi
+            package: keyvalue
+            interfaces: [store, atomics]
+            target_config:
+              - name: api-gateway-auth-config
+                properties:
+                  bucket: petclinic-auth
+                  cluster_uri: "nats://nats.petclinic.svc.cluster.local:4222"
 
     # ── Owner Aggregate ────────────────────────────────────────────────────────
     - name: owner-aggregate
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/owner-aggregate:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/owner-aggregate:latest
       traits:
         - type: spreadscaler
           properties:
@@ -62,7 +73,7 @@ spec:
     - name: pet-aggregate
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/pet-aggregate:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/pet-aggregate:latest
       traits:
         - type: spreadscaler
           properties:
@@ -72,7 +83,7 @@ spec:
     - name: vet-aggregate
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/vet-aggregate:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/vet-aggregate:latest
       traits:
         - type: spreadscaler
           properties:
@@ -82,7 +93,7 @@ spec:
     - name: event-store
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/event-store:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/event-store:latest
       traits:
         - type: spreadscaler
           properties:
@@ -97,7 +108,7 @@ spec:
               - name: events-bucket-config
                 properties:
                   bucket: petclinic-events
-                  cluster_uri: "nats://nats.wasmcloud.svc.cluster.local:4222"
+                  cluster_uri: "nats://nats.petclinic.svc.cluster.local:4222"
         - type: link
           properties:
             target: messaging-nats
@@ -109,7 +120,7 @@ spec:
     - name: owner-projector
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/owner-projector:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/owner-projector:latest
       traits:
         - type: spreadscaler
           properties:
@@ -124,7 +135,7 @@ spec:
               - name: owner-projector-views-config
                 properties:
                   bucket: petclinic-views
-                  cluster_uri: "nats://nats.wasmcloud.svc.cluster.local:4222"
+                  cluster_uri: "nats://nats.petclinic.svc.cluster.local:4222"
         - type: link
           properties:
             target: event-store
@@ -136,7 +147,7 @@ spec:
     - name: vet-projector
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/vet-projector:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/vet-projector:latest
       traits:
         - type: spreadscaler
           properties:
@@ -151,13 +162,13 @@ spec:
               - name: vet-projector-views-config
                 properties:
                   bucket: petclinic-views
-                  cluster_uri: "nats://nats.wasmcloud.svc.cluster.local:4222"
+                  cluster_uri: "nats://nats.petclinic.svc.cluster.local:4222"
 
     # ── Query Handler ──────────────────────────────────────────────────────────
     - name: query-handler
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/query-handler:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/query-handler:latest
       traits:
         - type: spreadscaler
           properties:
@@ -172,13 +183,13 @@ spec:
               - name: query-handler-views-config
                 properties:
                   bucket: petclinic-views
-                  cluster_uri: "nats://nats.wasmcloud.svc.cluster.local:4222"
+                  cluster_uri: "nats://nats.petclinic.svc.cluster.local:4222"
 
     # ── UI Server ──────────────────────────────────────────────────────────────
     - name: ui-server
       type: component
       properties:
-        image: oci://registry.wasmcloud.svc.cluster.local:5000/petclinic/ui-server:latest
+        image: oci://registry.petclinic.svc.cluster.local:5000/petclinic/ui-server:latest
       traits:
         - type: spreadscaler
           properties:
@@ -204,6 +215,7 @@ spec:
               - name: api-http-config
                 properties:
                   address: "0.0.0.0:8080"
+                  cors_allowed_headers: '["authorization","content-type","accept","accept-language","content-language"]'
         - type: link
           properties:
             name: ui-http

@@ -7826,6 +7826,870 @@ pub mod petclinic {
 #[rustfmt::skip]
 #[allow(dead_code, clippy::all)]
 pub mod wasi {
+    pub mod keyvalue {
+        /// A keyvalue interface that provides eventually consistent key-value operations.
+        ///
+        /// Each of these operations acts on a single key-value pair.
+        ///
+        /// The value in the key-value pair is defined as a `u8` byte array and the intention is that it is
+        /// the common denominator for all data types defined by different key-value stores to handle data,
+        /// ensuring compatibility between different key-value stores. Note: the clients will be expecting
+        /// serialization/deserialization overhead to be handled by the key-value store. The value could be
+        /// a serialized object from JSON, HTML or vendor-specific data types like AWS S3 objects.
+        ///
+        /// Data consistency in a key value store refers to the guarantee that once a write operation
+        /// completes, all subsequent read operations will return the value that was written.
+        ///
+        /// Any implementation of this interface must have enough consistency to guarantee "reading your
+        /// writes." In particular, this means that the client should never get a value that is older than
+        /// the one it wrote, but it MAY get a newer value if one was written around the same time. These
+        /// guarantees only apply to the same client (which will likely be provided by the host or an
+        /// external capability of some kind). In this context a "client" is referring to the caller or
+        /// guest that is consuming this interface. Once a write request is committed by a specific client,
+        /// all subsequent read requests by the same client will reflect that write or any subsequent
+        /// writes. Another client running in a different context may or may not immediately see the result
+        /// due to the replication lag. As an example of all of this, if a value at a given key is A, and
+        /// the client writes B, then immediately reads, it should get B. If something else writes C in
+        /// quick succession, then the client may get C. However, a client running in a separate context may
+        /// still see A or B
+        #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+        pub mod store {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            /// The set of errors which may be raised by functions in this package
+            #[derive(Clone)]
+            pub enum Error {
+                /// The host does not recognize the store identifier requested.
+                NoSuchStore,
+                /// The requesting component does not have access to the specified store
+                /// (which may or may not exist).
+                AccessDenied,
+                /// Some implementation-specific error has occurred (e.g. I/O)
+                Other(_rt::String),
+            }
+            impl ::core::fmt::Debug for Error {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    match self {
+                        Error::NoSuchStore => {
+                            f.debug_tuple("Error::NoSuchStore").finish()
+                        }
+                        Error::AccessDenied => {
+                            f.debug_tuple("Error::AccessDenied").finish()
+                        }
+                        Error::Other(e) => {
+                            f.debug_tuple("Error::Other").field(e).finish()
+                        }
+                    }
+                }
+            }
+            impl ::core::fmt::Display for Error {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    write!(f, "{:?}", self)
+                }
+            }
+            impl std::error::Error for Error {}
+            /// A response to a `list-keys` operation.
+            #[derive(Clone)]
+            pub struct KeyResponse {
+                /// The list of keys returned by the query.
+                pub keys: _rt::Vec<_rt::String>,
+                /// The continuation token to use to fetch the next page of keys. If this is `null`, then
+                /// there are no more keys to fetch.
+                pub cursor: Option<u64>,
+            }
+            impl ::core::fmt::Debug for KeyResponse {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("KeyResponse")
+                        .field("keys", &self.keys)
+                        .field("cursor", &self.cursor)
+                        .finish()
+                }
+            }
+            /// A bucket is a collection of key-value pairs. Each key-value pair is stored as a entry in the
+            /// bucket, and the bucket itself acts as a collection of all these entries.
+            ///
+            /// It is worth noting that the exact terminology for bucket in key-value stores can very
+            /// depending on the specific implementation. For example:
+            ///
+            /// 1. Amazon DynamoDB calls a collection of key-value pairs a table
+            /// 2. Redis has hashes, sets, and sorted sets as different types of collections
+            /// 3. Cassandra calls a collection of key-value pairs a column family
+            /// 4. MongoDB calls a collection of key-value pairs a collection
+            /// 5. Riak calls a collection of key-value pairs a bucket
+            /// 6. Memcached calls a collection of key-value pairs a slab
+            /// 7. Azure Cosmos DB calls a collection of key-value pairs a container
+            ///
+            /// In this interface, we use the term `bucket` to refer to a collection of key-value pairs
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Bucket {
+                handle: _rt::Resource<Bucket>,
+            }
+            impl Bucket {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: unsafe { _rt::Resource::from_handle(handle) },
+                    }
+                }
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+            unsafe impl _rt::WasmResource for Bucket {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasi:keyvalue/store@0.2.0-draft")]
+                        unsafe extern "C" {
+                            #[link_name = "[resource-drop]bucket"]
+                            fn drop(_: u32);
+                        }
+                        unsafe { drop(_handle) };
+                    }
+                }
+            }
+            impl Bucket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Get the value associated with the specified `key`
+                ///
+                /// The value is returned as an option. If the key-value pair exists in the
+                /// store, it returns `Ok(value)`. If the key does not exist in the
+                /// store, it returns `Ok(none)`.
+                ///
+                /// If any other error occurs, it returns an `Err(error)`.
+                pub fn get(&self, key: &str) -> Result<Option<_rt::Vec<u8>>, Error> {
+                    unsafe {
+                        #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                        #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                        struct RetArea(
+                            [::core::mem::MaybeUninit<
+                                u8,
+                            >; 4 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 4
+                                * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let vec0 = key;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:keyvalue/store@0.2.0-draft")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]bucket.get"]
+                            fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import2(
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        unsafe {
+                            wit_import2(
+                                (self).handle() as i32,
+                                ptr0.cast_mut(),
+                                len0,
+                                ptr1,
+                            )
+                        };
+                        let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+                        let result13 = match l3 {
+                            0 => {
+                                let e = {
+                                    let l4 = i32::from(
+                                        *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
+                                    );
+                                    match l4 {
+                                        0 => None,
+                                        1 => {
+                                            let e = {
+                                                let l5 = *ptr1
+                                                    .add(2 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<*mut u8>();
+                                                let l6 = *ptr1
+                                                    .add(3 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<usize>();
+                                                let len7 = l6;
+                                                _rt::Vec::from_raw_parts(l5.cast(), len7, len7)
+                                            };
+                                            Some(e)
+                                        }
+                                        _ => _rt::invalid_enum_discriminant(),
+                                    }
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l8 = i32::from(
+                                        *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
+                                    );
+                                    let v12 = match l8 {
+                                        0 => Error::NoSuchStore,
+                                        1 => Error::AccessDenied,
+                                        n => {
+                                            debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                            let e12 = {
+                                                let l9 = *ptr1
+                                                    .add(2 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<*mut u8>();
+                                                let l10 = *ptr1
+                                                    .add(3 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<usize>();
+                                                let len11 = l10;
+                                                let bytes11 = _rt::Vec::from_raw_parts(
+                                                    l9.cast(),
+                                                    len11,
+                                                    len11,
+                                                );
+                                                _rt::string_lift(bytes11)
+                                            };
+                                            Error::Other(e12)
+                                        }
+                                    };
+                                    v12
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        };
+                        result13
+                    }
+                }
+            }
+            impl Bucket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Set the value associated with the key in the store. If the key already
+                /// exists in the store, it overwrites the value.
+                ///
+                /// If the key does not exist in the store, it creates a new key-value pair.
+                ///
+                /// If any other error occurs, it returns an `Err(error)`.
+                pub fn set(&self, key: &str, value: &[u8]) -> Result<(), Error> {
+                    unsafe {
+                        #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                        #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                        struct RetArea(
+                            [::core::mem::MaybeUninit<
+                                u8,
+                            >; 4 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 4
+                                * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let vec0 = key;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let vec1 = value;
+                        let ptr1 = vec1.as_ptr().cast::<u8>();
+                        let len1 = vec1.len();
+                        let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:keyvalue/store@0.2.0-draft")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]bucket.set"]
+                            fn wit_import3(
+                                _: i32,
+                                _: *mut u8,
+                                _: usize,
+                                _: *mut u8,
+                                _: usize,
+                                _: *mut u8,
+                            );
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import3(
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        unsafe {
+                            wit_import3(
+                                (self).handle() as i32,
+                                ptr0.cast_mut(),
+                                len0,
+                                ptr1.cast_mut(),
+                                len1,
+                                ptr2,
+                            )
+                        };
+                        let l4 = i32::from(*ptr2.add(0).cast::<u8>());
+                        let result10 = match l4 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l5 = i32::from(
+                                        *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
+                                    );
+                                    let v9 = match l5 {
+                                        0 => Error::NoSuchStore,
+                                        1 => Error::AccessDenied,
+                                        n => {
+                                            debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                            let e9 = {
+                                                let l6 = *ptr2
+                                                    .add(2 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<*mut u8>();
+                                                let l7 = *ptr2
+                                                    .add(3 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<usize>();
+                                                let len8 = l7;
+                                                let bytes8 = _rt::Vec::from_raw_parts(
+                                                    l6.cast(),
+                                                    len8,
+                                                    len8,
+                                                );
+                                                _rt::string_lift(bytes8)
+                                            };
+                                            Error::Other(e9)
+                                        }
+                                    };
+                                    v9
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        };
+                        result10
+                    }
+                }
+            }
+            impl Bucket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Delete the key-value pair associated with the key in the store.
+                ///
+                /// If the key does not exist in the store, it does nothing.
+                ///
+                /// If any other error occurs, it returns an `Err(error)`.
+                pub fn delete(&self, key: &str) -> Result<(), Error> {
+                    unsafe {
+                        #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                        #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                        struct RetArea(
+                            [::core::mem::MaybeUninit<
+                                u8,
+                            >; 4 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 4
+                                * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let vec0 = key;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:keyvalue/store@0.2.0-draft")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]bucket.delete"]
+                            fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import2(
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        unsafe {
+                            wit_import2(
+                                (self).handle() as i32,
+                                ptr0.cast_mut(),
+                                len0,
+                                ptr1,
+                            )
+                        };
+                        let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+                        let result9 = match l3 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l4 = i32::from(
+                                        *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
+                                    );
+                                    let v8 = match l4 {
+                                        0 => Error::NoSuchStore,
+                                        1 => Error::AccessDenied,
+                                        n => {
+                                            debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                            let e8 = {
+                                                let l5 = *ptr1
+                                                    .add(2 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<*mut u8>();
+                                                let l6 = *ptr1
+                                                    .add(3 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<usize>();
+                                                let len7 = l6;
+                                                let bytes7 = _rt::Vec::from_raw_parts(
+                                                    l5.cast(),
+                                                    len7,
+                                                    len7,
+                                                );
+                                                _rt::string_lift(bytes7)
+                                            };
+                                            Error::Other(e8)
+                                        }
+                                    };
+                                    v8
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        };
+                        result9
+                    }
+                }
+            }
+            impl Bucket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Check if the key exists in the store.
+                pub fn exists(&self, key: &str) -> Result<bool, Error> {
+                    unsafe {
+                        #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                        #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                        struct RetArea(
+                            [::core::mem::MaybeUninit<
+                                u8,
+                            >; 4 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 4
+                                * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let vec0 = key;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:keyvalue/store@0.2.0-draft")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]bucket.exists"]
+                            fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import2(
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        unsafe {
+                            wit_import2(
+                                (self).handle() as i32,
+                                ptr0.cast_mut(),
+                                len0,
+                                ptr1,
+                            )
+                        };
+                        let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+                        let result10 = match l3 {
+                            0 => {
+                                let e = {
+                                    let l4 = i32::from(
+                                        *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
+                                    );
+                                    _rt::bool_lift(l4 as u8)
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l5 = i32::from(
+                                        *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
+                                    );
+                                    let v9 = match l5 {
+                                        0 => Error::NoSuchStore,
+                                        1 => Error::AccessDenied,
+                                        n => {
+                                            debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                            let e9 = {
+                                                let l6 = *ptr1
+                                                    .add(2 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<*mut u8>();
+                                                let l7 = *ptr1
+                                                    .add(3 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<usize>();
+                                                let len8 = l7;
+                                                let bytes8 = _rt::Vec::from_raw_parts(
+                                                    l6.cast(),
+                                                    len8,
+                                                    len8,
+                                                );
+                                                _rt::string_lift(bytes8)
+                                            };
+                                            Error::Other(e9)
+                                        }
+                                    };
+                                    v9
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        };
+                        result10
+                    }
+                }
+            }
+            impl Bucket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn list_keys(
+                    &self,
+                    cursor: Option<u64>,
+                ) -> Result<KeyResponse, Error> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea(
+                            [::core::mem::MaybeUninit<
+                                u8,
+                            >; 24 + 2 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let mut ret_area = RetArea(
+                            [::core::mem::MaybeUninit::uninit(); 24
+                                + 2 * ::core::mem::size_of::<*const u8>()],
+                        );
+                        let (result0_0, result0_1) = match cursor {
+                            Some(e) => (1i32, _rt::as_i64(e)),
+                            None => (0i32, 0i64),
+                        };
+                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:keyvalue/store@0.2.0-draft")]
+                        unsafe extern "C" {
+                            #[link_name = "[method]bucket.list-keys"]
+                            fn wit_import2(_: i32, _: i32, _: i64, _: *mut u8);
+                        }
+                        #[cfg(not(target_arch = "wasm32"))]
+                        unsafe extern "C" fn wit_import2(
+                            _: i32,
+                            _: i32,
+                            _: i64,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        unsafe {
+                            wit_import2(
+                                (self).handle() as i32,
+                                result0_0,
+                                result0_1,
+                                ptr1,
+                            )
+                        };
+                        let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+                        let result17 = match l3 {
+                            0 => {
+                                let e = {
+                                    let l4 = *ptr1.add(8).cast::<*mut u8>();
+                                    let l5 = *ptr1
+                                        .add(8 + 1 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<usize>();
+                                    let base9 = l4;
+                                    let len9 = l5;
+                                    let mut result9 = _rt::Vec::with_capacity(len9);
+                                    for i in 0..len9 {
+                                        let base = base9
+                                            .add(i * (2 * ::core::mem::size_of::<*const u8>()));
+                                        let e9 = {
+                                            let l6 = *base.add(0).cast::<*mut u8>();
+                                            let l7 = *base
+                                                .add(::core::mem::size_of::<*const u8>())
+                                                .cast::<usize>();
+                                            let len8 = l7;
+                                            let bytes8 = _rt::Vec::from_raw_parts(
+                                                l6.cast(),
+                                                len8,
+                                                len8,
+                                            );
+                                            _rt::string_lift(bytes8)
+                                        };
+                                        result9.push(e9);
+                                    }
+                                    _rt::cabi_dealloc(
+                                        base9,
+                                        len9 * (2 * ::core::mem::size_of::<*const u8>()),
+                                        ::core::mem::size_of::<*const u8>(),
+                                    );
+                                    let l10 = i32::from(
+                                        *ptr1
+                                            .add(8 + 2 * ::core::mem::size_of::<*const u8>())
+                                            .cast::<u8>(),
+                                    );
+                                    KeyResponse {
+                                        keys: result9,
+                                        cursor: match l10 {
+                                            0 => None,
+                                            1 => {
+                                                let e = {
+                                                    let l11 = *ptr1
+                                                        .add(16 + 2 * ::core::mem::size_of::<*const u8>())
+                                                        .cast::<i64>();
+                                                    l11 as u64
+                                                };
+                                                Some(e)
+                                            }
+                                            _ => _rt::invalid_enum_discriminant(),
+                                        },
+                                    }
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l12 = i32::from(*ptr1.add(8).cast::<u8>());
+                                    let v16 = match l12 {
+                                        0 => Error::NoSuchStore,
+                                        1 => Error::AccessDenied,
+                                        n => {
+                                            debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                            let e16 = {
+                                                let l13 = *ptr1
+                                                    .add(8 + 1 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<*mut u8>();
+                                                let l14 = *ptr1
+                                                    .add(8 + 2 * ::core::mem::size_of::<*const u8>())
+                                                    .cast::<usize>();
+                                                let len15 = l14;
+                                                let bytes15 = _rt::Vec::from_raw_parts(
+                                                    l13.cast(),
+                                                    len15,
+                                                    len15,
+                                                );
+                                                _rt::string_lift(bytes15)
+                                            };
+                                            Error::Other(e16)
+                                        }
+                                    };
+                                    v16
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        };
+                        result17
+                    }
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Get the bucket with the specified identifier.
+            pub fn open(identifier: &str) -> Result<Bucket, Error> {
+                unsafe {
+                    #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                    #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                    struct RetArea(
+                        [::core::mem::MaybeUninit<
+                            u8,
+                        >; 4 * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let mut ret_area = RetArea(
+                        [::core::mem::MaybeUninit::uninit(); 4
+                            * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let vec0 = identifier;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+                    let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:keyvalue/store@0.2.0-draft")]
+                    unsafe extern "C" {
+                        #[link_name = "open"]
+                        fn wit_import2(_: *mut u8, _: usize, _: *mut u8);
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unsafe extern "C" fn wit_import2(_: *mut u8, _: usize, _: *mut u8) {
+                        unreachable!()
+                    }
+                    unsafe { wit_import2(ptr0.cast_mut(), len0, ptr1) };
+                    let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+                    let result10 = match l3 {
+                        0 => {
+                            let e = {
+                                let l4 = *ptr1
+                                    .add(::core::mem::size_of::<*const u8>())
+                                    .cast::<i32>();
+                                unsafe { Bucket::from_handle(l4 as u32) }
+                            };
+                            Ok(e)
+                        }
+                        1 => {
+                            let e = {
+                                let l5 = i32::from(
+                                    *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<u8>(),
+                                );
+                                let v9 = match l5 {
+                                    0 => Error::NoSuchStore,
+                                    1 => Error::AccessDenied,
+                                    n => {
+                                        debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                        let e9 = {
+                                            let l6 = *ptr1
+                                                .add(2 * ::core::mem::size_of::<*const u8>())
+                                                .cast::<*mut u8>();
+                                            let l7 = *ptr1
+                                                .add(3 * ::core::mem::size_of::<*const u8>())
+                                                .cast::<usize>();
+                                            let len8 = l7;
+                                            let bytes8 = _rt::Vec::from_raw_parts(
+                                                l6.cast(),
+                                                len8,
+                                                len8,
+                                            );
+                                            _rt::string_lift(bytes8)
+                                        };
+                                        Error::Other(e9)
+                                    }
+                                };
+                                v9
+                            };
+                            Err(e)
+                        }
+                        _ => _rt::invalid_enum_discriminant(),
+                    };
+                    result10
+                }
+            }
+        }
+        #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+        pub mod atomics {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Bucket = super::super::super::wasi::keyvalue::store::Bucket;
+            pub type Error = super::super::super::wasi::keyvalue::store::Error;
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn increment(
+                bucket: &Bucket,
+                key: &str,
+                delta: u64,
+            ) -> Result<u64, Error> {
+                unsafe {
+                    #[repr(align(8))]
+                    struct RetArea(
+                        [::core::mem::MaybeUninit<
+                            u8,
+                        >; 16 + 2 * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let mut ret_area = RetArea(
+                        [::core::mem::MaybeUninit::uninit(); 16
+                            + 2 * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let vec0 = key;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+                    let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:keyvalue/atomics@0.2.0-draft")]
+                    unsafe extern "C" {
+                        #[link_name = "increment"]
+                        fn wit_import2(_: i32, _: *mut u8, _: usize, _: i64, _: *mut u8);
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unsafe extern "C" fn wit_import2(
+                        _: i32,
+                        _: *mut u8,
+                        _: usize,
+                        _: i64,
+                        _: *mut u8,
+                    ) {
+                        unreachable!()
+                    }
+                    unsafe {
+                        wit_import2(
+                            (bucket).handle() as i32,
+                            ptr0.cast_mut(),
+                            len0,
+                            _rt::as_i64(&delta),
+                            ptr1,
+                        )
+                    };
+                    let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+                    let result10 = match l3 {
+                        0 => {
+                            let e = {
+                                let l4 = *ptr1.add(8).cast::<i64>();
+                                l4 as u64
+                            };
+                            Ok(e)
+                        }
+                        1 => {
+                            let e = {
+                                let l5 = i32::from(*ptr1.add(8).cast::<u8>());
+                                use super::super::super::wasi::keyvalue::store::Error as V9;
+                                let v9 = match l5 {
+                                    0 => V9::NoSuchStore,
+                                    1 => V9::AccessDenied,
+                                    n => {
+                                        debug_assert_eq!(n, 2, "invalid enum discriminant");
+                                        let e9 = {
+                                            let l6 = *ptr1
+                                                .add(8 + 1 * ::core::mem::size_of::<*const u8>())
+                                                .cast::<*mut u8>();
+                                            let l7 = *ptr1
+                                                .add(8 + 2 * ::core::mem::size_of::<*const u8>())
+                                                .cast::<usize>();
+                                            let len8 = l7;
+                                            let bytes8 = _rt::Vec::from_raw_parts(
+                                                l6.cast(),
+                                                len8,
+                                                len8,
+                                            );
+                                            _rt::string_lift(bytes8)
+                                        };
+                                        V9::Other(e9)
+                                    }
+                                };
+                                v9
+                            };
+                            Err(e)
+                        }
+                        _ => _rt::invalid_enum_discriminant(),
+                    };
+                    result10
+                }
+            }
+        }
+    }
     pub mod clocks {
         /// WASI Wall Clock is a clock API intended to let users query the current
         /// time. The name "wall" makes an analogy to a "clock on the wall", which
@@ -16133,14 +16997,12 @@ macro_rules! __export_api_gateway_impl {
 }
 #[doc(inline)]
 pub(crate) use __export_api_gateway_impl as export;
-#[cfg(target_arch = "wasm32")]
-#[unsafe(
-    link_section = "component-type:wit-bindgen:0.41.0:petclinic:api-gateway@0.1.0:api-gateway:encoded world"
-)]
-#[doc(hidden)]
-#[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 10972] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xdaT\x01A\x02\x01A%\x01\
+  #[cfg(target_arch = "wasm32")]
+  #[unsafe(link_section = "component-type:wit-bindgen:0.57.1:petclinic:api-gateway@0.1.0:api-gateway:encoded world")]
+  #[doc(hidden)]
+  #[allow(clippy::octal_escapes)]
+  pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 11402] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x88X\x01A\x02\x01A'\x01\
 B\x1e\x01r\x02\x02ids\x04names\x04\0\x0cpet-type-ref\x03\0\0\x01r\x06\x0fidempot\
 ency-keys\x0afirst-names\x09last-names\x07addresss\x04citys\x09telephones\x04\0\x12\
 register-owner-cmd\x03\0\x02\x01ks\x01r\x06\x08owner-ids\x0afirst-name\x04\x09la\
@@ -16229,136 +17091,147 @@ pet-command\x01,\x01@\x01\x03cmd\x18\0*\x04\0\x10send-vet-command\x01-\x01j\x01\
 @\x02\x04pagey\x05limity\01\x04\0\x0blist-owners\x012\x01@\x01\x09last-names\01\x04\
 \0\x1asearch-owners-by-last-name\x013\x01j\x01%\x01)\x01@\x01\x06vet-ids\04\x04\0\
 \x07get-vet\x015\x01p'\x01j\x016\x01)\x01@\x02\x04pagey\x05limity\07\x04\0\x09li\
-st-vets\x018\x03\0\x1bpetclinic:gateway/api@0.1.0\x05\x07\x01B\x04\x01m\x06\x05t\
-race\x05debug\x04info\x04warn\x05error\x08critical\x04\0\x05level\x03\0\0\x01@\x03\
-\x05level\x01\x07contexts\x07messages\x01\0\x04\0\x03log\x01\x02\x03\0\x20wasi:l\
-ogging/logging@0.1.0-draft\x05\x08\x01B\x05\x01r\x02\x07secondsw\x0bnanosecondsy\
-\x04\0\x08datetime\x03\0\0\x01@\0\0\x01\x04\0\x03now\x01\x02\x04\0\x0aresolution\
-\x01\x02\x03\0\x1cwasi:clocks/wall-clock@0.2.2\x05\x09\x01B\x0a\x04\0\x08pollabl\
-e\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\x02\
-\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\x01\
-py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\0\x12wasi:io/poll@0.2.2\x05\
-\x0a\x02\x03\0\x08\x08pollable\x01B\x0f\x02\x03\x02\x01\x0b\x04\0\x08pollable\x03\
-\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08duration\x03\0\x04\x01@\0\0\x03\
-\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresolution\x01\x07\x01i\x01\x01@\x01\
-\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\x09\x01@\x01\x04when\x05\0\x08\
-\x04\0\x12subscribe-duration\x01\x0a\x03\0!wasi:clocks/monotonic-clock@0.2.2\x05\
-\x0c\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[me\
-thod]error.to-debug-string\x01\x02\x03\0\x13wasi:io/error@0.2.2\x05\x0d\x02\x03\0\
-\x0a\x05error\x01B(\x02\x03\x02\x01\x0e\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x0b\
-\x04\0\x08pollable\x03\0\x02\x01i\x01\x01q\x02\x15last-operation-failed\x01\x04\0\
-\x06closed\0\0\x04\0\x0cstream-error\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\
-\0\x0doutput-stream\x03\x01\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\
-\x09\x03lenw\0\x0b\x04\0\x19[method]input-stream.read\x01\x0c\x04\0\"[method]inp\
-ut-stream.blocking-read\x01\x0c\x01j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\
-\x0d\x04\0\x19[method]input-stream.skip\x01\x0e\x04\0\"[method]input-stream.bloc\
-king-skip\x01\x0e\x01i\x03\x01@\x01\x04self\x09\0\x0f\x04\0\x1e[method]input-str\
-eam.subscribe\x01\x10\x01h\x08\x01@\x01\x04self\x11\0\x0d\x04\0![method]output-s\
-tream.check-write\x01\x12\x01j\0\x01\x06\x01@\x02\x04self\x11\x08contents\x0a\0\x13\
-\x04\0\x1b[method]output-stream.write\x01\x14\x04\0.[method]output-stream.blocki\
-ng-write-and-flush\x01\x14\x01@\x01\x04self\x11\0\x13\x04\0\x1b[method]output-st\
-ream.flush\x01\x15\x04\0$[method]output-stream.blocking-flush\x01\x15\x01@\x01\x04\
-self\x11\0\x0f\x04\0\x1f[method]output-stream.subscribe\x01\x16\x01@\x02\x04self\
-\x11\x03lenw\0\x13\x04\0\"[method]output-stream.write-zeroes\x01\x17\x04\05[meth\
-od]output-stream.blocking-write-zeroes-and-flush\x01\x17\x01@\x03\x04self\x11\x03\
-src\x09\x03lenw\0\x0d\x04\0\x1c[method]output-stream.splice\x01\x18\x04\0%[metho\
-d]output-stream.blocking-splice\x01\x18\x03\0\x15wasi:io/streams@0.2.2\x05\x0f\x02\
-\x03\0\x09\x08duration\x02\x03\0\x0b\x0cinput-stream\x02\x03\0\x0b\x0doutput-str\
-eam\x01B\xc1\x01\x02\x03\x02\x01\x10\x04\0\x08duration\x03\0\0\x02\x03\x02\x01\x11\
-\x04\0\x0cinput-stream\x03\0\x02\x02\x03\x02\x01\x12\x04\0\x0doutput-stream\x03\0\
-\x04\x02\x03\x02\x01\x0e\x04\0\x08io-error\x03\0\x06\x02\x03\x02\x01\x0b\x04\0\x08\
-pollable\x03\0\x08\x01q\x0a\x03get\0\0\x04head\0\0\x04post\0\0\x03put\0\0\x06del\
-ete\0\0\x07connect\0\0\x07options\0\0\x05trace\0\0\x05patch\0\0\x05other\x01s\0\x04\
-\0\x06method\x03\0\x0a\x01q\x03\x04HTTP\0\0\x05HTTPS\0\0\x05other\x01s\0\x04\0\x06\
-scheme\x03\0\x0c\x01ks\x01k{\x01r\x02\x05rcode\x0e\x09info-code\x0f\x04\0\x11DNS\
--error-payload\x03\0\x10\x01k}\x01r\x02\x08alert-id\x12\x0dalert-message\x0e\x04\
-\0\x1aTLS-alert-received-payload\x03\0\x13\x01ky\x01r\x02\x0afield-name\x0e\x0af\
-ield-size\x15\x04\0\x12field-size-payload\x03\0\x16\x01kw\x01k\x17\x01q'\x0bDNS-\
-timeout\0\0\x09DNS-error\x01\x11\0\x15destination-not-found\0\0\x17destination-u\
-navailable\0\0\x19destination-IP-prohibited\0\0\x19destination-IP-unroutable\0\0\
-\x12connection-refused\0\0\x15connection-terminated\0\0\x12connection-timeout\0\0\
-\x17connection-read-timeout\0\0\x18connection-write-timeout\0\0\x18connection-li\
-mit-reached\0\0\x12TLS-protocol-error\0\0\x15TLS-certificate-error\0\0\x12TLS-al\
-ert-received\x01\x14\0\x13HTTP-request-denied\0\0\x1cHTTP-request-length-require\
-d\0\0\x16HTTP-request-body-size\x01\x18\0\x1bHTTP-request-method-invalid\0\0\x18\
-HTTP-request-URI-invalid\0\0\x19HTTP-request-URI-too-long\0\0\x20HTTP-request-he\
-ader-section-size\x01\x15\0\x18HTTP-request-header-size\x01\x19\0!HTTP-request-t\
-railer-section-size\x01\x15\0\x19HTTP-request-trailer-size\x01\x17\0\x18HTTP-res\
-ponse-incomplete\0\0!HTTP-response-header-section-size\x01\x15\0\x19HTTP-respons\
-e-header-size\x01\x17\0\x17HTTP-response-body-size\x01\x18\0\"HTTP-response-trai\
-ler-section-size\x01\x15\0\x1aHTTP-response-trailer-size\x01\x17\0\x1dHTTP-respo\
-nse-transfer-coding\x01\x0e\0\x1cHTTP-response-content-coding\x01\x0e\0\x15HTTP-\
-response-timeout\0\0\x13HTTP-upgrade-failed\0\0\x13HTTP-protocol-error\0\0\x0dlo\
-op-detected\0\0\x13configuration-error\0\0\x0einternal-error\x01\x0e\0\x04\0\x0a\
-error-code\x03\0\x1a\x01q\x03\x0einvalid-syntax\0\0\x09forbidden\0\0\x09immutabl\
-e\0\0\x04\0\x0cheader-error\x03\0\x1c\x01s\x04\0\x09field-key\x03\0\x1e\x04\0\x0a\
-field-name\x03\0\x1f\x01p}\x04\0\x0bfield-value\x03\0!\x04\0\x06fields\x03\x01\x04\
-\0\x07headers\x03\0#\x04\0\x08trailers\x03\0#\x04\0\x10incoming-request\x03\x01\x04\
-\0\x10outgoing-request\x03\x01\x04\0\x0frequest-options\x03\x01\x04\0\x11respons\
-e-outparam\x03\x01\x01{\x04\0\x0bstatus-code\x03\0*\x04\0\x11incoming-response\x03\
-\x01\x04\0\x0dincoming-body\x03\x01\x04\0\x0ffuture-trailers\x03\x01\x04\0\x11ou\
-tgoing-response\x03\x01\x04\0\x0doutgoing-body\x03\x01\x04\0\x18future-incoming-\
-response\x03\x01\x01i#\x01@\0\02\x04\0\x13[constructor]fields\x013\x01o\x02\x20\"\
-\x01p4\x01j\x012\x01\x1d\x01@\x01\x07entries5\06\x04\0\x18[static]fields.from-li\
-st\x017\x01h#\x01p\"\x01@\x02\x04self8\x04name\x20\09\x04\0\x12[method]fields.ge\
-t\x01:\x01@\x02\x04self8\x04name\x20\0\x7f\x04\0\x12[method]fields.has\x01;\x01j\
-\0\x01\x1d\x01@\x03\x04self8\x04name\x20\x05value9\0<\x04\0\x12[method]fields.se\
-t\x01=\x01@\x02\x04self8\x04name\x20\0<\x04\0\x15[method]fields.delete\x01>\x01@\
-\x03\x04self8\x04name\x20\x05value\"\0<\x04\0\x15[method]fields.append\x01?\x01@\
-\x01\x04self8\05\x04\0\x16[method]fields.entries\x01@\x01@\x01\x04self8\02\x04\0\
-\x14[method]fields.clone\x01A\x01h&\x01@\x01\x04self\xc2\0\0\x0b\x04\0\x1f[metho\
-d]incoming-request.method\x01C\x01@\x01\x04self\xc2\0\0\x0e\x04\0([method]incomi\
-ng-request.path-with-query\x01D\x01k\x0d\x01@\x01\x04self\xc2\0\0\xc5\0\x04\0\x1f\
-[method]incoming-request.scheme\x01F\x04\0\"[method]incoming-request.authority\x01\
-D\x01i$\x01@\x01\x04self\xc2\0\0\xc7\0\x04\0\x20[method]incoming-request.headers\
-\x01H\x01i-\x01j\x01\xc9\0\0\x01@\x01\x04self\xc2\0\0\xca\0\x04\0\x20[method]inc\
-oming-request.consume\x01K\x01i'\x01@\x01\x07headers\xc7\0\0\xcc\0\x04\0\x1d[con\
-structor]outgoing-request\x01M\x01h'\x01i0\x01j\x01\xcf\0\0\x01@\x01\x04self\xce\
-\0\0\xd0\0\x04\0\x1d[method]outgoing-request.body\x01Q\x01@\x01\x04self\xce\0\0\x0b\
-\x04\0\x1f[method]outgoing-request.method\x01R\x01j\0\0\x01@\x02\x04self\xce\0\x06\
-method\x0b\0\xd3\0\x04\0#[method]outgoing-request.set-method\x01T\x01@\x01\x04se\
-lf\xce\0\0\x0e\x04\0([method]outgoing-request.path-with-query\x01U\x01@\x02\x04s\
-elf\xce\0\x0fpath-with-query\x0e\0\xd3\0\x04\0,[method]outgoing-request.set-path\
--with-query\x01V\x01@\x01\x04self\xce\0\0\xc5\0\x04\0\x1f[method]outgoing-reques\
-t.scheme\x01W\x01@\x02\x04self\xce\0\x06scheme\xc5\0\0\xd3\0\x04\0#[method]outgo\
-ing-request.set-scheme\x01X\x04\0\"[method]outgoing-request.authority\x01U\x01@\x02\
-\x04self\xce\0\x09authority\x0e\0\xd3\0\x04\0&[method]outgoing-request.set-autho\
-rity\x01Y\x01@\x01\x04self\xce\0\0\xc7\0\x04\0\x20[method]outgoing-request.heade\
-rs\x01Z\x01i(\x01@\0\0\xdb\0\x04\0\x1c[constructor]request-options\x01\\\x01h(\x01\
-k\x01\x01@\x01\x04self\xdd\0\0\xde\0\x04\0'[method]request-options.connect-timeo\
-ut\x01_\x01@\x02\x04self\xdd\0\x08duration\xde\0\0\xd3\0\x04\0+[method]request-o\
-ptions.set-connect-timeout\x01`\x04\0*[method]request-options.first-byte-timeout\
-\x01_\x04\0.[method]request-options.set-first-byte-timeout\x01`\x04\0-[method]re\
-quest-options.between-bytes-timeout\x01_\x04\01[method]request-options.set-betwe\
-en-bytes-timeout\x01`\x01i)\x01i/\x01j\x01\xe2\0\x01\x1b\x01@\x02\x05param\xe1\0\
-\x08response\xe3\0\x01\0\x04\0\x1d[static]response-outparam.set\x01d\x01h,\x01@\x01\
-\x04self\xe5\0\0+\x04\0\x20[method]incoming-response.status\x01f\x01@\x01\x04sel\
-f\xe5\0\0\xc7\0\x04\0![method]incoming-response.headers\x01g\x01@\x01\x04self\xe5\
-\0\0\xca\0\x04\0![method]incoming-response.consume\x01h\x01h-\x01i\x03\x01j\x01\xea\
-\0\0\x01@\x01\x04self\xe9\0\0\xeb\0\x04\0\x1c[method]incoming-body.stream\x01l\x01\
-i.\x01@\x01\x04this\xc9\0\0\xed\0\x04\0\x1c[static]incoming-body.finish\x01n\x01\
-h.\x01i\x09\x01@\x01\x04self\xef\0\0\xf0\0\x04\0![method]future-trailers.subscri\
-be\x01q\x01i%\x01k\xf2\0\x01j\x01\xf3\0\x01\x1b\x01j\x01\xf4\0\0\x01k\xf5\0\x01@\
-\x01\x04self\xef\0\0\xf6\0\x04\0\x1b[method]future-trailers.get\x01w\x01@\x01\x07\
-headers\xc7\0\0\xe2\0\x04\0\x1e[constructor]outgoing-response\x01x\x01h/\x01@\x01\
-\x04self\xf9\0\0+\x04\0%[method]outgoing-response.status-code\x01z\x01@\x02\x04s\
-elf\xf9\0\x0bstatus-code+\0\xd3\0\x04\0)[method]outgoing-response.set-status-cod\
-e\x01{\x01@\x01\x04self\xf9\0\0\xc7\0\x04\0![method]outgoing-response.headers\x01\
-|\x01@\x01\x04self\xf9\0\0\xd0\0\x04\0\x1e[method]outgoing-response.body\x01}\x01\
-h0\x01i\x05\x01j\x01\xff\0\0\x01@\x01\x04self\xfe\0\0\x80\x01\x04\0\x1b[method]o\
-utgoing-body.write\x01\x81\x01\x01j\0\x01\x1b\x01@\x02\x04this\xcf\0\x08trailers\
-\xf3\0\0\x82\x01\x04\0\x1c[static]outgoing-body.finish\x01\x83\x01\x01h1\x01@\x01\
-\x04self\x84\x01\0\xf0\0\x04\0*[method]future-incoming-response.subscribe\x01\x85\
-\x01\x01i,\x01j\x01\x86\x01\x01\x1b\x01j\x01\x87\x01\0\x01k\x88\x01\x01@\x01\x04\
-self\x84\x01\0\x89\x01\x04\0$[method]future-incoming-response.get\x01\x8a\x01\x01\
-h\x07\x01k\x1b\x01@\x01\x03err\x8b\x01\0\x8c\x01\x04\0\x0fhttp-error-code\x01\x8d\
-\x01\x03\0\x15wasi:http/types@0.2.2\x05\x13\x02\x03\0\x0c\x10incoming-request\x02\
-\x03\0\x0c\x11response-outparam\x01B\x08\x02\x03\x02\x01\x14\x04\0\x10incoming-r\
-equest\x03\0\0\x02\x03\x02\x01\x15\x04\0\x11response-outparam\x03\0\x02\x01i\x01\
-\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\0\x04\0\x06handle\x01\x06\
-\x04\0\x20wasi:http/incoming-handler@0.2.2\x05\x16\x04\0'petclinic:api-gateway/a\
-pi-gateway@0.1.0\x04\0\x0b\x11\x01\0\x0bapi-gateway\x03\0\0\0G\x09producers\x01\x0c\
-processed-by\x02\x0dwit-component\x070.227.1\x10wit-bindgen-rust\x060.41.0";
+st-vets\x018\x03\0\x1bpetclinic:gateway/api@0.1.0\x05\x07\x01B\x1c\x01q\x03\x0dn\
+o-such-store\0\0\x0daccess-denied\0\0\x05other\x01s\0\x04\0\x05error\x03\0\0\x01\
+ps\x01kw\x01r\x02\x04keys\x02\x06cursor\x03\x04\0\x0ckey-response\x03\0\x04\x04\0\
+\x06bucket\x03\x01\x01h\x06\x01p}\x01k\x08\x01j\x01\x09\x01\x01\x01@\x02\x04self\
+\x07\x03keys\0\x0a\x04\0\x12[method]bucket.get\x01\x0b\x01j\0\x01\x01\x01@\x03\x04\
+self\x07\x03keys\x05value\x08\0\x0c\x04\0\x12[method]bucket.set\x01\x0d\x01@\x02\
+\x04self\x07\x03keys\0\x0c\x04\0\x15[method]bucket.delete\x01\x0e\x01j\x01\x7f\x01\
+\x01\x01@\x02\x04self\x07\x03keys\0\x0f\x04\0\x15[method]bucket.exists\x01\x10\x01\
+j\x01\x05\x01\x01\x01@\x02\x04self\x07\x06cursor\x03\0\x11\x04\0\x18[method]buck\
+et.list-keys\x01\x12\x01i\x06\x01j\x01\x13\x01\x01\x01@\x01\x0aidentifiers\0\x14\
+\x04\0\x04open\x01\x15\x03\0\x1fwasi:keyvalue/store@0.2.0-draft\x05\x08\x01B\x04\
+\x01m\x06\x05trace\x05debug\x04info\x04warn\x05error\x08critical\x04\0\x05level\x03\
+\0\0\x01@\x03\x05level\x01\x07contexts\x07messages\x01\0\x04\0\x03log\x01\x02\x03\
+\0\x20wasi:logging/logging@0.1.0-draft\x05\x09\x01B\x05\x01r\x02\x07secondsw\x0b\
+nanosecondsy\x04\0\x08datetime\x03\0\0\x01@\0\0\x01\x04\0\x03now\x01\x02\x04\0\x0a\
+resolution\x01\x02\x03\0\x1cwasi:clocks/wall-clock@0.2.2\x05\x0a\x01B\x0a\x04\0\x08\
+pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[method]pollable.rea\
+dy\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.block\x01\x03\x01\
+p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\0\x12wasi:io/poll\
+@0.2.2\x05\x0b\x02\x03\0\x09\x08pollable\x01B\x0f\x02\x03\x02\x01\x0c\x04\0\x08p\
+ollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08duration\x03\0\x04\
+\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresolution\x01\x07\x01i\
+\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\x09\x01@\x01\x04w\
+hen\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x03\0!wasi:clocks/monotonic-cl\
+ock@0.2.2\x05\x0d\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\
+\x04\0\x1d[method]error.to-debug-string\x01\x02\x03\0\x13wasi:io/error@0.2.2\x05\
+\x0e\x02\x03\0\x0b\x05error\x01B(\x02\x03\x02\x01\x0f\x04\0\x05error\x03\0\0\x02\
+\x03\x02\x01\x0c\x04\0\x08pollable\x03\0\x02\x01i\x01\x01q\x02\x15last-operation\
+-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstream-error\x03\0\x05\x04\0\x0cinput-s\
+tream\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\
+\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[method]input-stream.read\x01\x0c\x04\
+\0\"[method]input-stream.blocking-read\x01\x0c\x01j\x01w\x01\x06\x01@\x02\x04sel\
+f\x09\x03lenw\0\x0d\x04\0\x19[method]input-stream.skip\x01\x0e\x04\0\"[method]in\
+put-stream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\x04self\x09\0\x0f\x04\0\x1e[m\
+ethod]input-stream.subscribe\x01\x10\x01h\x08\x01@\x01\x04self\x11\0\x0d\x04\0![\
+method]output-stream.check-write\x01\x12\x01j\0\x01\x06\x01@\x02\x04self\x11\x08\
+contents\x0a\0\x13\x04\0\x1b[method]output-stream.write\x01\x14\x04\0.[method]ou\
+tput-stream.blocking-write-and-flush\x01\x14\x01@\x01\x04self\x11\0\x13\x04\0\x1b\
+[method]output-stream.flush\x01\x15\x04\0$[method]output-stream.blocking-flush\x01\
+\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]output-stream.subscribe\x01\x16\
+\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method]output-stream.write-zeroes\x01\
+\x17\x04\05[method]output-stream.blocking-write-zeroes-and-flush\x01\x17\x01@\x03\
+\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[method]output-stream.splice\x01\x18\
+\x04\0%[method]output-stream.blocking-splice\x01\x18\x03\0\x15wasi:io/streams@0.\
+2.2\x05\x10\x02\x03\0\x0a\x08duration\x02\x03\0\x0c\x0cinput-stream\x02\x03\0\x0c\
+\x0doutput-stream\x01B\xc1\x01\x02\x03\x02\x01\x11\x04\0\x08duration\x03\0\0\x02\
+\x03\x02\x01\x12\x04\0\x0cinput-stream\x03\0\x02\x02\x03\x02\x01\x13\x04\0\x0dou\
+tput-stream\x03\0\x04\x02\x03\x02\x01\x0f\x04\0\x08io-error\x03\0\x06\x02\x03\x02\
+\x01\x0c\x04\0\x08pollable\x03\0\x08\x01q\x0a\x03get\0\0\x04head\0\0\x04post\0\0\
+\x03put\0\0\x06delete\0\0\x07connect\0\0\x07options\0\0\x05trace\0\0\x05patch\0\0\
+\x05other\x01s\0\x04\0\x06method\x03\0\x0a\x01q\x03\x04HTTP\0\0\x05HTTPS\0\0\x05\
+other\x01s\0\x04\0\x06scheme\x03\0\x0c\x01ks\x01k{\x01r\x02\x05rcode\x0e\x09info\
+-code\x0f\x04\0\x11DNS-error-payload\x03\0\x10\x01k}\x01r\x02\x08alert-id\x12\x0d\
+alert-message\x0e\x04\0\x1aTLS-alert-received-payload\x03\0\x13\x01ky\x01r\x02\x0a\
+field-name\x0e\x0afield-size\x15\x04\0\x12field-size-payload\x03\0\x16\x01kw\x01\
+k\x17\x01q'\x0bDNS-timeout\0\0\x09DNS-error\x01\x11\0\x15destination-not-found\0\
+\0\x17destination-unavailable\0\0\x19destination-IP-prohibited\0\0\x19destinatio\
+n-IP-unroutable\0\0\x12connection-refused\0\0\x15connection-terminated\0\0\x12co\
+nnection-timeout\0\0\x17connection-read-timeout\0\0\x18connection-write-timeout\0\
+\0\x18connection-limit-reached\0\0\x12TLS-protocol-error\0\0\x15TLS-certificate-\
+error\0\0\x12TLS-alert-received\x01\x14\0\x13HTTP-request-denied\0\0\x1cHTTP-req\
+uest-length-required\0\0\x16HTTP-request-body-size\x01\x18\0\x1bHTTP-request-met\
+hod-invalid\0\0\x18HTTP-request-URI-invalid\0\0\x19HTTP-request-URI-too-long\0\0\
+\x20HTTP-request-header-section-size\x01\x15\0\x18HTTP-request-header-size\x01\x19\
+\0!HTTP-request-trailer-section-size\x01\x15\0\x19HTTP-request-trailer-size\x01\x17\
+\0\x18HTTP-response-incomplete\0\0!HTTP-response-header-section-size\x01\x15\0\x19\
+HTTP-response-header-size\x01\x17\0\x17HTTP-response-body-size\x01\x18\0\"HTTP-r\
+esponse-trailer-section-size\x01\x15\0\x1aHTTP-response-trailer-size\x01\x17\0\x1d\
+HTTP-response-transfer-coding\x01\x0e\0\x1cHTTP-response-content-coding\x01\x0e\0\
+\x15HTTP-response-timeout\0\0\x13HTTP-upgrade-failed\0\0\x13HTTP-protocol-error\0\
+\0\x0dloop-detected\0\0\x13configuration-error\0\0\x0einternal-error\x01\x0e\0\x04\
+\0\x0aerror-code\x03\0\x1a\x01q\x03\x0einvalid-syntax\0\0\x09forbidden\0\0\x09im\
+mutable\0\0\x04\0\x0cheader-error\x03\0\x1c\x01s\x04\0\x09field-key\x03\0\x1e\x04\
+\0\x0afield-name\x03\0\x1f\x01p}\x04\0\x0bfield-value\x03\0!\x04\0\x06fields\x03\
+\x01\x04\0\x07headers\x03\0#\x04\0\x08trailers\x03\0#\x04\0\x10incoming-request\x03\
+\x01\x04\0\x10outgoing-request\x03\x01\x04\0\x0frequest-options\x03\x01\x04\0\x11\
+response-outparam\x03\x01\x01{\x04\0\x0bstatus-code\x03\0*\x04\0\x11incoming-res\
+ponse\x03\x01\x04\0\x0dincoming-body\x03\x01\x04\0\x0ffuture-trailers\x03\x01\x04\
+\0\x11outgoing-response\x03\x01\x04\0\x0doutgoing-body\x03\x01\x04\0\x18future-i\
+ncoming-response\x03\x01\x01i#\x01@\0\02\x04\0\x13[constructor]fields\x013\x01o\x02\
+\x20\"\x01p4\x01j\x012\x01\x1d\x01@\x01\x07entries5\06\x04\0\x18[static]fields.f\
+rom-list\x017\x01h#\x01p\"\x01@\x02\x04self8\x04name\x20\09\x04\0\x12[method]fie\
+lds.get\x01:\x01@\x02\x04self8\x04name\x20\0\x7f\x04\0\x12[method]fields.has\x01\
+;\x01j\0\x01\x1d\x01@\x03\x04self8\x04name\x20\x05value9\0<\x04\0\x12[method]fie\
+lds.set\x01=\x01@\x02\x04self8\x04name\x20\0<\x04\0\x15[method]fields.delete\x01\
+>\x01@\x03\x04self8\x04name\x20\x05value\"\0<\x04\0\x15[method]fields.append\x01\
+?\x01@\x01\x04self8\05\x04\0\x16[method]fields.entries\x01@\x01@\x01\x04self8\02\
+\x04\0\x14[method]fields.clone\x01A\x01h&\x01@\x01\x04self\xc2\0\0\x0b\x04\0\x1f\
+[method]incoming-request.method\x01C\x01@\x01\x04self\xc2\0\0\x0e\x04\0([method]\
+incoming-request.path-with-query\x01D\x01k\x0d\x01@\x01\x04self\xc2\0\0\xc5\0\x04\
+\0\x1f[method]incoming-request.scheme\x01F\x04\0\"[method]incoming-request.autho\
+rity\x01D\x01i$\x01@\x01\x04self\xc2\0\0\xc7\0\x04\0\x20[method]incoming-request\
+.headers\x01H\x01i-\x01j\x01\xc9\0\0\x01@\x01\x04self\xc2\0\0\xca\0\x04\0\x20[me\
+thod]incoming-request.consume\x01K\x01i'\x01@\x01\x07headers\xc7\0\0\xcc\0\x04\0\
+\x1d[constructor]outgoing-request\x01M\x01h'\x01i0\x01j\x01\xcf\0\0\x01@\x01\x04\
+self\xce\0\0\xd0\0\x04\0\x1d[method]outgoing-request.body\x01Q\x01@\x01\x04self\xce\
+\0\0\x0b\x04\0\x1f[method]outgoing-request.method\x01R\x01j\0\0\x01@\x02\x04self\
+\xce\0\x06method\x0b\0\xd3\0\x04\0#[method]outgoing-request.set-method\x01T\x01@\
+\x01\x04self\xce\0\0\x0e\x04\0([method]outgoing-request.path-with-query\x01U\x01\
+@\x02\x04self\xce\0\x0fpath-with-query\x0e\0\xd3\0\x04\0,[method]outgoing-reques\
+t.set-path-with-query\x01V\x01@\x01\x04self\xce\0\0\xc5\0\x04\0\x1f[method]outgo\
+ing-request.scheme\x01W\x01@\x02\x04self\xce\0\x06scheme\xc5\0\0\xd3\0\x04\0#[me\
+thod]outgoing-request.set-scheme\x01X\x04\0\"[method]outgoing-request.authority\x01\
+U\x01@\x02\x04self\xce\0\x09authority\x0e\0\xd3\0\x04\0&[method]outgoing-request\
+.set-authority\x01Y\x01@\x01\x04self\xce\0\0\xc7\0\x04\0\x20[method]outgoing-req\
+uest.headers\x01Z\x01i(\x01@\0\0\xdb\0\x04\0\x1c[constructor]request-options\x01\
+\\\x01h(\x01k\x01\x01@\x01\x04self\xdd\0\0\xde\0\x04\0'[method]request-options.c\
+onnect-timeout\x01_\x01@\x02\x04self\xdd\0\x08duration\xde\0\0\xd3\0\x04\0+[meth\
+od]request-options.set-connect-timeout\x01`\x04\0*[method]request-options.first-\
+byte-timeout\x01_\x04\0.[method]request-options.set-first-byte-timeout\x01`\x04\0\
+-[method]request-options.between-bytes-timeout\x01_\x04\01[method]request-option\
+s.set-between-bytes-timeout\x01`\x01i)\x01i/\x01j\x01\xe2\0\x01\x1b\x01@\x02\x05\
+param\xe1\0\x08response\xe3\0\x01\0\x04\0\x1d[static]response-outparam.set\x01d\x01\
+h,\x01@\x01\x04self\xe5\0\0+\x04\0\x20[method]incoming-response.status\x01f\x01@\
+\x01\x04self\xe5\0\0\xc7\0\x04\0![method]incoming-response.headers\x01g\x01@\x01\
+\x04self\xe5\0\0\xca\0\x04\0![method]incoming-response.consume\x01h\x01h-\x01i\x03\
+\x01j\x01\xea\0\0\x01@\x01\x04self\xe9\0\0\xeb\0\x04\0\x1c[method]incoming-body.\
+stream\x01l\x01i.\x01@\x01\x04this\xc9\0\0\xed\0\x04\0\x1c[static]incoming-body.\
+finish\x01n\x01h.\x01i\x09\x01@\x01\x04self\xef\0\0\xf0\0\x04\0![method]future-t\
+railers.subscribe\x01q\x01i%\x01k\xf2\0\x01j\x01\xf3\0\x01\x1b\x01j\x01\xf4\0\0\x01\
+k\xf5\0\x01@\x01\x04self\xef\0\0\xf6\0\x04\0\x1b[method]future-trailers.get\x01w\
+\x01@\x01\x07headers\xc7\0\0\xe2\0\x04\0\x1e[constructor]outgoing-response\x01x\x01\
+h/\x01@\x01\x04self\xf9\0\0+\x04\0%[method]outgoing-response.status-code\x01z\x01\
+@\x02\x04self\xf9\0\x0bstatus-code+\0\xd3\0\x04\0)[method]outgoing-response.set-\
+status-code\x01{\x01@\x01\x04self\xf9\0\0\xc7\0\x04\0![method]outgoing-response.\
+headers\x01|\x01@\x01\x04self\xf9\0\0\xd0\0\x04\0\x1e[method]outgoing-response.b\
+ody\x01}\x01h0\x01i\x05\x01j\x01\xff\0\0\x01@\x01\x04self\xfe\0\0\x80\x01\x04\0\x1b\
+[method]outgoing-body.write\x01\x81\x01\x01j\0\x01\x1b\x01@\x02\x04this\xcf\0\x08\
+trailers\xf3\0\0\x82\x01\x04\0\x1c[static]outgoing-body.finish\x01\x83\x01\x01h1\
+\x01@\x01\x04self\x84\x01\0\xf0\0\x04\0*[method]future-incoming-response.subscri\
+be\x01\x85\x01\x01i,\x01j\x01\x86\x01\x01\x1b\x01j\x01\x87\x01\0\x01k\x88\x01\x01\
+@\x01\x04self\x84\x01\0\x89\x01\x04\0$[method]future-incoming-response.get\x01\x8a\
+\x01\x01h\x07\x01k\x1b\x01@\x01\x03err\x8b\x01\0\x8c\x01\x04\0\x0fhttp-error-cod\
+e\x01\x8d\x01\x03\0\x15wasi:http/types@0.2.2\x05\x14\x02\x03\0\x0d\x10incoming-r\
+equest\x02\x03\0\x0d\x11response-outparam\x01B\x08\x02\x03\x02\x01\x15\x04\0\x10\
+incoming-request\x03\0\0\x02\x03\x02\x01\x16\x04\0\x11response-outparam\x03\0\x02\
+\x01i\x01\x01i\x03\x01@\x02\x07request\x04\x0cresponse-out\x05\x01\0\x04\0\x06ha\
+ndle\x01\x06\x04\0\x20wasi:http/incoming-handler@0.2.2\x05\x17\x04\0'petclinic:a\
+pi-gateway/api-gateway@0.1.0\x04\0\x0b\x11\x01\0\x0bapi-gateway\x03\0\0\0G\x09pr\
+oducers\x01\x0cprocessed-by\x02\x0dwit-component\x070.247.0\x10wit-bindgen-rust\x06\
+0.57.1";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
