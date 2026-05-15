@@ -1,0 +1,27 @@
+package petclinic:domain@0.1.0;
+
+interface types {
+    type owner-id    = string;
+    type pet-id      = string;
+    type vet-id      = string;
+    type visit-id    = string;
+    type date-string = string;
+
+    record pet-type {
+        id:   string,
+        name: string,
+    }
+
+    record specialty {
+        id:   string,
+        name: string,
+    }
+
+    variant domain-error {
+        not-found(string),
+        validation(string),
+        conflict(string),
+        store-error(string),
+        internal(string),
+    }
+}

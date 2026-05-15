@@ -1,0 +1,38 @@
+package petclinic:views@0.1.0;
+
+interface owner-profile {
+    record visit-summary {
+        visit-id:    string,
+        date:        string,
+        description: string,
+    }
+
+    record pet-type-ref { id: string, name: string }
+
+    record pet-summary {
+        pet-id:     string,
+        name:       string,
+        birth-date: string,
+        pet-type:   pet-type-ref,
+        visits:     list<visit-summary>,
+    }
+
+    record owner-profile-view {
+        owner-id:   string,
+        first-name: string,
+        last-name:  string,
+        address:    string,
+        city:       string,
+        telephone:  string,
+        pets:       list<pet-summary>,
+        version:    u64,
+    }
+
+    record owner-list-item {
+        owner-id:   string,
+        first-name: string,
+        last-name:  string,
+        city:       string,
+        pet-count:  u32,
+    }
+}

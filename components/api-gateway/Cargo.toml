@@ -1,0 +1,34 @@
+[package]
+name    = "api-gateway"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen    = { workspace = true }
+wit-bindgen-rt = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+uuid           = { workspace = true }
+
+[package.metadata.component]
+package = "petclinic:api-gateway"
+
+[package.metadata.component.target]
+path  = "wit"
+world = "api-gateway"
+
+[package.metadata.component.target.dependencies]
+"wasi:http"           = { path = "../../wit/deps/wasi-http-0.2.2" }
+"wasi:logging"        = { path = "../../wit/deps/wasi-logging" }
+"wasi:clocks"         = { path = "../../wit/deps/wasi-clocks-0.2.2" }
+"wasi:io"             = { path = "../../wit/deps/wasi-io-0.2.2" }
+"wasi:cli"            = { path = "../../wit/deps/wasi-cli-0.2.2-min" }
+"wasi:random"         = { path = "../../wit/deps/wasi-random-0.2.2" }
+"petclinic:owner-aggregate" = { path = "../../wit/petclinic-owner-aggregate" }
+"petclinic:pet-aggregate"   = { path = "../../wit/petclinic-pet-aggregate" }
+"petclinic:vet-aggregate"   = { path = "../../wit/petclinic-vet-aggregate" }
+"petclinic:store"           = { path = "../../wit/petclinic-store" }
+"petclinic:gateway"         = { path = "../../wit/petclinic-gateway" }

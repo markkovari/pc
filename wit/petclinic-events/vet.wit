@@ -1,0 +1,23 @@
+package petclinic:events@0.1.0;
+
+interface vet-events {
+    use petclinic:domain/types.{vet-id, specialty};
+
+    record vet-registered {
+        vet-id:      vet-id,
+        first-name:  string,
+        last-name:   string,
+        occurred-at: u64,
+    }
+
+    record specialty-added {
+        vet-id:      vet-id,
+        specialty:   specialty,
+        occurred-at: u64,
+    }
+
+    variant vet-event {
+        registered(vet-registered),
+        specialty-added(specialty-added),
+    }
+}

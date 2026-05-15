@@ -1,0 +1,73 @@
+package petclinic:aggregate@0.1.0;
+
+interface pet-aggregate {
+    record pet-type-ref { id: string, name: string }
+
+    record register-pet-cmd {
+        idempotency-key: string,
+        owner-id:        string,
+        name:            string,
+        birth-date:      string,
+        pet-type:        pet-type-ref,
+    }
+
+    record schedule-visit-cmd {
+        pet-id:      string,
+        date:        string,
+        description: string,
+    }
+
+    variant pet-command {
+        register(register-pet-cmd),
+        schedule-visit(schedule-visit-cmd),
+    }
+
+    record stored-event {
+        event-id:       string,
+        aggregate-type: string,
+        aggregate-id:   string,
+        sequence:       u64,
+        event-type:     string,
+        payload-json:   list<u8>,
+        occurred-at-ms: u64,
+    }
+
+    record visit-summary {
+        visit-id:    string,
+        date:        string,
+        description: string,
+    }
+
+    record pet-state {
+        pet-id:     string,
+        owner-id:   string,
+        name:       string,
+        birth-date: string,
+        pet-type:   pet-type-ref,
+        visits:     list<visit-summary>,
+        version:    u64,
+    }
+
+    variant domain-error {
+        not-found(string),
+        validation(string),
+        conflict(string),
+        store-error(string),
+        internal(string),
+    }
+
+    handle-command: func(
+        aggregate-id: string,
+        command:      pet-command,
+        history:      list<stored-event>,
+    ) -> result<list<stored-event>, domain-error>;
+
+    apply-event: func(
+        state: option<pet-state>,
+        event: stored-event,
+    ) -> result<pet-state, domain-error>;
+
+    reconstruct-state: func(
+        history: list<stored-event>,
+    ) -> result<option<pet-state>, domain-error>;
+}

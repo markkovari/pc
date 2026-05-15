@@ -1,0 +1,4 @@
+version: 2.1.0
+build:
+  command: cargo build --target wasm32-wasip1 --release
+  component_path: ../../target/wasm32-wasip1/release/api_gateway.wasm

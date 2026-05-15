@@ -1,0 +1,8 @@
+package petclinic:owner-aggregate-world@0.1.0;
+
+world owner-aggregate {
+    export petclinic:owner-aggregate/owner-aggregate@0.1.0;
+
+    import wasi:logging/logging@0.1.0-draft;
+    import wasi:clocks/wall-clock@0.2.2;
+}

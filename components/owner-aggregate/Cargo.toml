@@ -1,0 +1,27 @@
+[package]
+name    = "owner-aggregate"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen    = { workspace = true }
+wit-bindgen-rt = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+uuid           = { workspace = true }
+
+[package.metadata.component]
+package = "petclinic:owner-aggregate"
+
+[package.metadata.component.target]
+path  = "wit"
+world = "owner-aggregate"
+
+[package.metadata.component.target.dependencies]
+"wasi:logging" = { path = "../../wit/deps/wasi-logging" }
+"wasi:clocks"  = { path = "../../wit/deps/wasi-clocks-0.2.2" }
+"wasi:io"      = { path = "../../wit/deps/wasi-io-0.2.2" }
+"petclinic:owner-aggregate" = { path = "../../wit/petclinic-owner-aggregate" }

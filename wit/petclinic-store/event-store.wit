@@ -1,0 +1,42 @@
+package petclinic:store@0.1.0;
+
+interface types {
+    record stored-event {
+        event-id:       string,
+        aggregate-type: string,
+        aggregate-id:   string,
+        sequence:       u64,
+        event-type:     string,
+        payload-json:   list<u8>,
+        occurred-at-ms: u64,
+    }
+
+    variant store-error {
+        not-found(string),
+        conflict(string),
+        backend(string),
+        internal(string),
+    }
+}
+
+interface event-store {
+    use types.{stored-event, store-error};
+
+    append-events: func(
+        aggregate-type:    string,
+        aggregate-id:      string,
+        expected-sequence: u64,
+        events:            list<stored-event>,
+    ) -> result<u64, store-error>;
+
+    load-events: func(
+        aggregate-type: string,
+        aggregate-id:   string,
+    ) -> result<list<stored-event>, store-error>;
+
+    load-events-from: func(
+        aggregate-type: string,
+        aggregate-id:   string,
+        after-sequence: u64,
+    ) -> result<list<stored-event>, store-error>;
+}

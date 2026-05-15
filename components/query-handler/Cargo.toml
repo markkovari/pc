@@ -1,0 +1,26 @@
+[package]
+name    = "query-handler"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen    = { workspace = true }
+wit-bindgen-rt = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+
+[package.metadata.component]
+package = "petclinic:query-handler"
+
+[package.metadata.component.target]
+path  = "wit"
+world = "query-handler"
+
+[package.metadata.component.target.dependencies]
+"wasi:keyvalue"     = { path = "../../wit/deps/wasi-keyvalue-0.2.0-draft" }
+"wasi:logging"      = { path = "../../wit/deps/wasi-logging" }
+"wasi:io"           = { path = "../../wit/deps/wasi-io-0.2.2" }
+"petclinic:gateway" = { path = "../../wit/petclinic-gateway" }

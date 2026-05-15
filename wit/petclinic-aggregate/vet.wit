@@ -1,0 +1,62 @@
+package petclinic:aggregate@0.1.0;
+
+interface vet-aggregate {
+    record specialty-ref { id: string, name: string }
+
+    record register-vet-cmd {
+        idempotency-key: string,
+        first-name:      string,
+        last-name:       string,
+    }
+
+    record add-specialty-cmd {
+        vet-id:    string,
+        specialty: specialty-ref,
+    }
+
+    variant vet-command {
+        register(register-vet-cmd),
+        add-specialty(add-specialty-cmd),
+    }
+
+    record stored-event {
+        event-id:       string,
+        aggregate-type: string,
+        aggregate-id:   string,
+        sequence:       u64,
+        event-type:     string,
+        payload-json:   list<u8>,
+        occurred-at-ms: u64,
+    }
+
+    record vet-state {
+        vet-id:      string,
+        first-name:  string,
+        last-name:   string,
+        specialties: list<specialty-ref>,
+        version:     u64,
+    }
+
+    variant domain-error {
+        not-found(string),
+        validation(string),
+        conflict(string),
+        store-error(string),
+        internal(string),
+    }
+
+    handle-command: func(
+        aggregate-id: string,
+        command:      vet-command,
+        history:      list<stored-event>,
+    ) -> result<list<stored-event>, domain-error>;
+
+    apply-event: func(
+        state: option<vet-state>,
+        event: stored-event,
+    ) -> result<vet-state, domain-error>;
+
+    reconstruct-state: func(
+        history: list<stored-event>,
+    ) -> result<option<vet-state>, domain-error>;
+}

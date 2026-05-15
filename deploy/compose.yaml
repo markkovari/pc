@@ -1,0 +1,31 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    command: ["--js", "--sd=/data"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats-data:/data
+
+  wadm:
+    image: ghcr.io/wasmcloud/wadm:latest
+    depends_on:
+      - nats
+    environment:
+      WADM_NATS_SERVER: nats://nats:4222
+    restart: unless-stopped
+
+  wasmcloud:
+    image: ghcr.io/wasmcloud/wasmcloud:latest
+    depends_on:
+      - nats
+      - wadm
+    environment:
+      WASMCLOUD_NATS_URL: nats://nats:4222
+      RUST_LOG: info
+    volumes:
+      - ../target:/target:ro
+
+volumes:
+  nats-data:

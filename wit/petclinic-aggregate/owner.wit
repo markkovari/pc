@@ -1,0 +1,81 @@
+package petclinic:aggregate@0.1.0;
+
+interface owner-aggregate {
+    // Inlined domain types (avoid cross-package WIT deps for cargo-component)
+    record pet-type-ref { id: string, name: string }
+
+    record register-owner-cmd {
+        idempotency-key: string,
+        first-name:  string,
+        last-name:   string,
+        address:     string,
+        city:        string,
+        telephone:   string,
+    }
+
+    record update-owner-cmd {
+        owner-id:   string,
+        first-name: option<string>,
+        last-name:  option<string>,
+        address:    option<string>,
+        city:       option<string>,
+        telephone:  option<string>,
+    }
+
+    record add-pet-cmd {
+        owner-id:   string,
+        name:       string,
+        birth-date: string,
+        pet-type:   pet-type-ref,
+    }
+
+    variant owner-command {
+        register(register-owner-cmd),
+        update(update-owner-cmd),
+        add-pet(add-pet-cmd),
+    }
+
+    record stored-event {
+        event-id:       string,
+        aggregate-type: string,
+        aggregate-id:   string,
+        sequence:       u64,
+        event-type:     string,
+        payload-json:   list<u8>,
+        occurred-at-ms: u64,
+    }
+
+    record owner-state {
+        owner-id:   string,
+        first-name: string,
+        last-name:  string,
+        address:    string,
+        city:       string,
+        telephone:  string,
+        pet-ids:    list<string>,
+        version:    u64,
+    }
+
+    variant domain-error {
+        not-found(string),
+        validation(string),
+        conflict(string),
+        store-error(string),
+        internal(string),
+    }
+
+    handle-command: func(
+        aggregate-id: string,
+        command:      owner-command,
+        history:      list<stored-event>,
+    ) -> result<list<stored-event>, domain-error>;
+
+    apply-event: func(
+        state: option<owner-state>,
+        event: stored-event,
+    ) -> result<owner-state, domain-error>;
+
+    reconstruct-state: func(
+        history: list<stored-event>,
+    ) -> result<option<owner-state>, domain-error>;
+}

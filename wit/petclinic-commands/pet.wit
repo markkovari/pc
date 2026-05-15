@@ -1,0 +1,24 @@
+package petclinic:commands@0.1.0;
+
+interface pet-commands {
+    use petclinic:domain/types.{pet-id, visit-id, pet-type, date-string};
+
+    record register-pet {
+        idempotency-key: string,
+        owner-id:        string,
+        name:            string,
+        birth-date:      date-string,
+        pet-type:        pet-type,
+    }
+
+    record schedule-visit {
+        pet-id:      pet-id,
+        date:        date-string,
+        description: string,
+    }
+
+    variant pet-command {
+        register(register-pet),
+        schedule-visit(schedule-visit),
+    }
+}

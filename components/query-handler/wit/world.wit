@@ -1,0 +1,8 @@
+package petclinic:query-handler-world@0.1.0;
+
+world query-handler {
+    export petclinic:gateway/api@0.1.0;
+
+    import wasi:keyvalue/store@0.2.0-draft;
+    import wasi:logging/logging@0.1.0-draft;
+}

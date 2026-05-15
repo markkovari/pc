@@ -1,0 +1,40 @@
+package petclinic:events@0.1.0;
+
+interface owner-events {
+    use petclinic:domain/types.{owner-id, pet-id, pet-type, date-string};
+
+    record owner-registered {
+        owner-id:    owner-id,
+        first-name:  string,
+        last-name:   string,
+        address:     string,
+        city:        string,
+        telephone:   string,
+        occurred-at: u64,
+    }
+
+    record owner-updated {
+        owner-id:    owner-id,
+        first-name:  option<string>,
+        last-name:   option<string>,
+        address:     option<string>,
+        city:        option<string>,
+        telephone:   option<string>,
+        occurred-at: u64,
+    }
+
+    record pet-added-to-owner {
+        owner-id:    owner-id,
+        pet-id:      pet-id,
+        name:        string,
+        birth-date:  date-string,
+        pet-type:    pet-type,
+        occurred-at: u64,
+    }
+
+    variant owner-event {
+        registered(owner-registered),
+        updated(owner-updated),
+        pet-added(pet-added-to-owner),
+    }
+}

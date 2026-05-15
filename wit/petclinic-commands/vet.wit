@@ -1,0 +1,21 @@
+package petclinic:commands@0.1.0;
+
+interface vet-commands {
+    use petclinic:domain/types.{vet-id, specialty};
+
+    record register-vet {
+        idempotency-key: string,
+        first-name:      string,
+        last-name:       string,
+    }
+
+    record add-specialty {
+        vet-id:    vet-id,
+        specialty: specialty,
+    }
+
+    variant vet-command {
+        register(register-vet),
+        add-specialty(add-specialty),
+    }
+}

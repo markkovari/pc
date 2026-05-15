@@ -1,0 +1,27 @@
+package petclinic:events@0.1.0;
+
+interface pet-events {
+    use petclinic:domain/types.{pet-id, visit-id, pet-type, date-string};
+
+    record pet-registered {
+        pet-id:      pet-id,
+        owner-id:    string,
+        name:        string,
+        birth-date:  date-string,
+        pet-type:    pet-type,
+        occurred-at: u64,
+    }
+
+    record visit-scheduled {
+        pet-id:      pet-id,
+        visit-id:    visit-id,
+        date:        date-string,
+        description: string,
+        occurred-at: u64,
+    }
+
+    variant pet-event {
+        registered(pet-registered),
+        visit-scheduled(visit-scheduled),
+    }
+}

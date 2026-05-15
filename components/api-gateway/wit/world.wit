@@ -1,0 +1,14 @@
+package petclinic:api-gateway@0.1.0;
+
+world api-gateway {
+    export wasi:http/incoming-handler@0.2.2;
+
+    import petclinic:owner-aggregate/owner-aggregate@0.1.0;
+    import petclinic:pet-aggregate/pet-aggregate@0.1.0;
+    import petclinic:vet-aggregate/vet-aggregate@0.1.0;
+    import petclinic:store/event-store@0.1.0;
+    import petclinic:gateway/api@0.1.0;
+
+    import wasi:logging/logging@0.1.0-draft;
+    import wasi:clocks/wall-clock@0.2.2;
+}

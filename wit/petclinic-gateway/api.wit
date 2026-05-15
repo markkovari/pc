@@ -1,0 +1,127 @@
+package petclinic:gateway@0.1.0;
+
+interface api {
+    record pet-type-ref    { id: string, name: string }
+    record specialty-ref   { id: string, name: string }
+
+    record register-owner-cmd {
+        idempotency-key: string,
+        first-name:  string,
+        last-name:   string,
+        address:     string,
+        city:        string,
+        telephone:   string,
+    }
+    record update-owner-cmd {
+        owner-id:   string,
+        first-name: option<string>,
+        last-name:  option<string>,
+        address:    option<string>,
+        city:       option<string>,
+        telephone:  option<string>,
+    }
+    record add-pet-cmd {
+        owner-id:   string,
+        name:       string,
+        birth-date: string,
+        pet-type:   pet-type-ref,
+    }
+    variant owner-command {
+        register(register-owner-cmd),
+        update(update-owner-cmd),
+        add-pet(add-pet-cmd),
+    }
+
+    record register-pet-cmd {
+        idempotency-key: string,
+        owner-id:        string,
+        name:            string,
+        birth-date:      string,
+        pet-type:        pet-type-ref,
+    }
+    record schedule-visit-cmd {
+        pet-id:      string,
+        date:        string,
+        description: string,
+    }
+    variant pet-command {
+        register(register-pet-cmd),
+        schedule-visit(schedule-visit-cmd),
+    }
+
+    record register-vet-cmd {
+        idempotency-key: string,
+        first-name:      string,
+        last-name:       string,
+    }
+    record add-specialty-cmd {
+        vet-id:    string,
+        specialty: specialty-ref,
+    }
+    variant vet-command {
+        register(register-vet-cmd),
+        add-specialty(add-specialty-cmd),
+    }
+
+    record visit-summary {
+        visit-id:    string,
+        date:        string,
+        description: string,
+    }
+    record pet-summary {
+        pet-id:     string,
+        name:       string,
+        birth-date: string,
+        pet-type:   pet-type-ref,
+        visits:     list<visit-summary>,
+    }
+    record owner-profile-view {
+        owner-id:   string,
+        first-name: string,
+        last-name:  string,
+        address:    string,
+        city:       string,
+        telephone:  string,
+        pets:       list<pet-summary>,
+        version:    u64,
+    }
+    record owner-list-item {
+        owner-id:   string,
+        first-name: string,
+        last-name:  string,
+        city:       string,
+        pet-count:  u32,
+    }
+    record vet-profile-view {
+        vet-id:      string,
+        first-name:  string,
+        last-name:   string,
+        specialties: list<specialty-ref>,
+        version:     u64,
+    }
+    record vet-list-item {
+        vet-id:          string,
+        first-name:      string,
+        last-name:       string,
+        specialty-count: u32,
+    }
+
+    variant domain-error {
+        not-found(string),
+        validation(string),
+        conflict(string),
+        store-error(string),
+        internal(string),
+    }
+
+    send-owner-command: func(cmd: owner-command) -> result<string, domain-error>;
+    send-pet-command:   func(cmd: pet-command)   -> result<string, domain-error>;
+    send-vet-command:   func(cmd: vet-command)   -> result<string, domain-error>;
+
+    get-owner:                  func(owner-id: string) -> result<owner-profile-view, domain-error>;
+    list-owners:                func(page: u32, limit: u32) -> result<list<owner-list-item>, domain-error>;
+    search-owners-by-last-name: func(last-name: string) -> result<list<owner-list-item>, domain-error>;
+
+    get-vet:   func(vet-id: string) -> result<vet-profile-view, domain-error>;
+    list-vets: func(page: u32, limit: u32) -> result<list<vet-list-item>, domain-error>;
+}

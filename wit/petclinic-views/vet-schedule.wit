@@ -1,0 +1,20 @@
+package petclinic:views@0.1.0;
+
+interface vet-schedule {
+    record specialty-ref { id: string, name: string }
+
+    record vet-profile-view {
+        vet-id:      string,
+        first-name:  string,
+        last-name:   string,
+        specialties: list<specialty-ref>,
+        version:     u64,
+    }
+
+    record vet-list-item {
+        vet-id:          string,
+        first-name:      string,
+        last-name:       string,
+        specialty-count: u32,
+    }
+}
