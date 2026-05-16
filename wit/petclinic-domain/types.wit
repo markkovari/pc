@@ -24,4 +24,10 @@ interface types {
         store-error(string),
         internal(string),
     }
+
+    enum user-role {
+        admin,
+        vet,
+        owner,
+    }
 }

@@ -8,6 +8,7 @@ members = [
     "components/event-store",
     "components/owner-projector",
     "components/vet-projector",
+    "components/pet-projector",
     "components/query-handler",
     "components/ui-server",
 ]

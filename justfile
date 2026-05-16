@@ -2,13 +2,23 @@ registry := "localhost:5001"
 nats     := "localhost:4222"
 lattice  := "petclinic"
 
-components := "api-gateway owner-aggregate pet-aggregate vet-aggregate event-store owner-projector vet-projector query-handler ui-server"
+components := "api-gateway owner-aggregate pet-aggregate vet-aggregate event-store owner-projector vet-projector pet-projector query-handler ui-server"
 
 # Show available recipes
 default:
     @just --list
 
 # ── Build ──────────────────────────────────────────────────────────────────────
+
+# Validate all WIT files (parse + type-check) without compiling Rust
+wit-validate:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for c in {{components}}; do
+        echo "→ wit validate: $c"
+        (cd components/$c && wash wit fetch)
+    done
+    echo "✓ all WIT valid"
 
 # Fetch WIT deps for all components
 deps:
